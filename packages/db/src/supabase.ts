@@ -3,12 +3,12 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Access Environment variables (Node/Server environment variables)
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || 'https://mock.supabase.co';
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || 'mock-key';
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'mock-role-key';
 
-if (!SUPABASE_URL) {
-  console.warn('Missing SUPABASE_URL environment variable.');
+if (!process.env.SUPABASE_URL) {
+  console.warn('Missing SUPABASE_URL environment variable. Using mock values.');
 }
 
 // 1. PUBLIC CLIENT (respects Row-Level Security)
