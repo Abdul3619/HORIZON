@@ -1,0 +1,6 @@
+{
+  "name": "L'Horizon Royal",
+  "description": "An exquisite five-star luxury international resort frontend experience designed for L'Horizon Royal.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
