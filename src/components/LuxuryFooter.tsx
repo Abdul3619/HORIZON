@@ -153,7 +153,7 @@ export default function LuxuryFooter() {
         {/* Bottom Legal bar */}
         <div className="border-t border-gold-400/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4" id="footer-bottom">
           <p className="text-[10px] font-mono tracking-wider text-cream/35 text-center md:text-left">
-            {t('footer.rights')}
+            {t('footer.rights')} {t('footer.sampleReviews')}
           </p>
           <div className="flex items-center space-x-6 text-[10px] font-mono text-gold-400/40">
             <span>SOVEREIGN PRIVATE CLASS</span>

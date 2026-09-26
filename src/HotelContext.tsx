@@ -247,6 +247,7 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'footer.contact': 'Inquiries',
     'footer.address': '742 Boulevard de la Reine, Nice, France',
     'footer.rights': '© 2026 L\'Horizon Royal S.A. All rights reserved. Devised for elite travelers.',
+    'footer.sampleReviews': 'Reviews shown are sample content.',
 
     // Accommodations / Filters
     'filters.all': 'All Sanctuary Rooms',
