@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { CreditCard, Calendar, Users, Percent, ShieldCheck, CheckCircle2, Copy, Sparkles, AlertCircle, RefreshCw, Hotel } from 'lucide-react';
 
 export default function BookingView() {
-  const { reservation, updateReservation, suites, selectedSuite, setSelectedSuite, t, language } = useHotel();
+  const { reservation, updateReservation, suites, selectedSuite, setSelectedSuite, t, language, today } = useHotel();
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Local form/checkout states
   const [fullName, setFullName] = useState('');
@@ -87,6 +88,21 @@ export default function BookingView() {
   const handleAuthorizeBooking = (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentSuite) return;
+    if (today && reservation.checkIn < today) {
+      setFormError(language === 'fr' ? "La date d'arrivée ne peut pas être dans le passé." : 'The check-in date cannot be in the past.');
+      return;
+    }
+    if (reservation.checkOut <= reservation.checkIn) {
+      setFormError(language === 'fr' ? "La date de départ doit être postérieure à la date d'arrivée." : 'The check-out date must be after the check-in date.');
+      return;
+    }
+    if (currentSuite.maxOccupancy < reservation.guests) {
+      setFormError(language === 'fr'
+        ? `Cette suite accueille ${currentSuite.maxOccupancy} voyageurs au maximum.`
+        : `This suite accommodates up to ${currentSuite.maxOccupancy} guests.`);
+      return;
+    }
+    setFormError(null);
 
     setIsProcessing(true);
 
@@ -212,6 +228,8 @@ export default function BookingView() {
                           type="date"
                           required
                           value={reservation.checkIn}
+                          min={today || undefined}
+                          aria-label={t('bookbar.checkin')}
                           onChange={(e) => updateReservation({ checkIn: e.target.value })}
                           className="w-full bg-obsidian border border-gold-400/10 text-cream px-4 py-3 text-xs focus:outline-none focus:border-gold-400 transition-colors font-mono"
                         />
@@ -223,7 +241,8 @@ export default function BookingView() {
                           type="date"
                           required
                           value={reservation.checkOut}
-                          min={reservation.checkIn}
+                          min={reservation.checkIn || undefined}
+                          aria-label={t('bookbar.checkout')}
                           onChange={(e) => updateReservation({ checkOut: e.target.value })}
                           className="w-full bg-obsidian border border-gold-400/10 text-cream px-4 py-3 text-xs focus:outline-none focus:border-gold-400 transition-colors font-mono"
                         />
@@ -307,6 +326,10 @@ export default function BookingView() {
                       </div>
                     </div>
 
+                    <p className="text-[11px] leading-relaxed text-gold-400/80 font-sans" role="note">
+                      {t('checkout.demo_notice')}
+                    </p>
+
                     <div className="space-y-5">
                       <div className="space-y-2">
                         <label className="text-[10px] uppercase tracking-widest text-cream/40 font-mono">{t('checkout.card_name')}</label>
@@ -314,6 +337,8 @@ export default function BookingView() {
                           type="text"
                           required
                           placeholder="A MONTGOMERY"
+                          autoComplete="off"
+                          aria-label={t('checkout.card_name')}
                           value={cardName}
                           onChange={(e) => setCardName(e.target.value.toUpperCase())}
                           className="w-full bg-obsidian border border-gold-400/10 text-cream px-4 py-3 text-xs focus:outline-none focus:border-gold-400 transition-colors font-mono tracking-widest"
@@ -327,6 +352,9 @@ export default function BookingView() {
                           required
                           maxLength={19}
                           placeholder="4111 2222 3333 4444"
+                          autoComplete="off"
+                          inputMode="numeric"
+                          aria-label={t('checkout.card_num')}
                           value={cardNumber}
                           onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
                           className="w-full bg-obsidian border border-gold-400/10 text-cream px-4 py-3 text-xs focus:outline-none focus:border-gold-400 transition-colors font-mono tracking-widest"
@@ -341,6 +369,8 @@ export default function BookingView() {
                             required
                             maxLength={5}
                             placeholder="MM/YY"
+                            autoComplete="off"
+                            aria-label={t('checkout.card_exp')}
                             value={cardExp}
                             onChange={(e) => setCardExp(e.target.value)}
                             className="w-full bg-obsidian border border-gold-400/10 text-cream px-4 py-3 text-xs focus:outline-none focus:border-gold-400 transition-colors font-mono text-center tracking-widest"
@@ -354,6 +384,9 @@ export default function BookingView() {
                             required
                             maxLength={4}
                             placeholder="•••"
+                            autoComplete="off"
+                            inputMode="numeric"
+                            aria-label={t('checkout.card_cvv')}
                             value={cardCvv}
                             onChange={(e) => setCardCvv(e.target.value.replace(/[^0-9]/g, ''))}
                             className="w-full bg-obsidian border border-gold-400/10 text-cream px-4 py-3 text-xs focus:outline-none focus:border-gold-400 transition-colors font-mono text-center tracking-widest"
@@ -365,6 +398,7 @@ export default function BookingView() {
 
                   {/* Submission Authorization Trigger */}
                   <div className="pt-4">
+                    {formError && <p role="alert" className="mb-4 text-xs text-red-400">{formError}</p>}
                     <button
                       type="submit"
                       disabled={isProcessing || !currentSuite}
@@ -527,8 +561,9 @@ export default function BookingView() {
                   <div className="flex items-center space-x-2">
                     <span className="font-mono text-gold-400 font-semibold tracking-wider select-all">{mockBookingRef}</span>
                     <button
-                      onClick={() => navigator.clipboard.writeText(mockBookingRef)}
+                      onClick={() => navigator.clipboard?.writeText(mockBookingRef).catch(() => {})}
                       className="text-cream/40 hover:text-gold-400 p-0.5 transition-colors"
+                      aria-label="Copy booking reference"
                       title="Copy code"
                     >
                       <Copy className="w-3.5 h-3.5" />

@@ -21,12 +21,14 @@ async function startServer() {
       const signature = req.headers['stripe-signature'] || '';
       let event;
 
+      // Never trust an unsigned payload: without the webhook secret anyone could post a fake
+      // "checkout.session.completed" event and mark a booking as paid.
+      if (!stripeSecretKey || !webhookSecret) {
+        return res.status(503).json({ success: false, error: 'Stripe webhook is not configured' });
+      }
+
       try {
-        if (!stripeSecretKey || !webhookSecret) {
-          event = JSON.parse(req.body.toString());
-        } else {
-          event = stripe.webhooks.constructEvent(req.body, signature, webhookSecret);
-        }
+        event = stripe.webhooks.constructEvent(req.body, signature, webhookSecret);
       } catch (err: any) {
         return res.status(400).json({ success: false, error: 'Signature verification failed' });
       }
@@ -40,7 +42,7 @@ async function startServer() {
         const gatewayRef = session.id;
 
         if (bookingId) {
-          const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc(
+          const { error: rpcError } = await supabaseAdmin.rpc(
             'confirm_booking_payment_atomic',
             {
               p_booking_id: bookingId,
@@ -51,6 +53,11 @@ async function startServer() {
               p_ip_address: req.ip || '0.0.0.0'
             }
           );
+          if (rpcError) {
+            // Return an error so Stripe retries delivery instead of the payment being silently lost
+            console.error('confirm_booking_payment_atomic failed:', rpcError.message);
+            return res.status(500).json({ success: false, error: 'Could not record payment' });
+          }
         }
       }
 
@@ -68,13 +75,24 @@ async function startServer() {
       const { bookingId } = req.body;
       if (!bookingId) return res.status(400).json({ error: "Booking ID required" });
 
+      // Charge the booking's actual total, and only for bookings still awaiting payment
+      const { data: booking, error: bookingError } = await supabaseAdmin
+        .from('bookings')
+        .select('id, status, total_amount, customer:users(email, first_name, last_name)')
+        .eq('id', bookingId)
+        .maybeSingle();
+      if (bookingError) return res.status(500).json({ error: "Could not load booking" });
+      if (!booking) return res.status(404).json({ error: "Booking not found" });
+      if (booking.status !== 'pending') return res.status(409).json({ error: "Booking is not awaiting payment" });
+
+      const customer: any = Array.isArray((booking as any).customer) ? (booking as any).customer[0] : (booking as any).customer;
       const paymentAdapter = PaymentGatewayRegistry.getAdapter('stripe');
       const paymentResult = await paymentAdapter.createPaymentIntent({
-        bookingId: bookingId,
-        amount: 500, // Mock amount, should be fetched from DB
+        bookingId: booking.id,
+        amount: Number(booking.total_amount),
         currency: 'EUR',
-        guestName: "Guest",
-        guestEmail: "guest@example.com"
+        guestName: [customer?.first_name, customer?.last_name].filter(Boolean).join(' ') || 'Guest',
+        guestEmail: customer?.email || ''
       });
 
       if (!paymentResult.success) {
@@ -101,7 +119,8 @@ async function startServer() {
   } else {
     // Production serving
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
+    // Serve prerendered views at clean URLs (/rooms -> rooms.html), like Vercel's cleanUrls
+    app.use(express.static(distPath, { extensions: ['html'] }));
     // Fallback for SPA (Catch-all for Express 4.x)
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
