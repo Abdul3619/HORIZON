@@ -368,6 +368,7 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'footer.contact': 'Inscriptions & Contact',
     'footer.address': '742 Boulevard de la Reine, Nice, France',
     'footer.rights': '© 2026 L\'Horizon Royal S.A. Tous droits réservés. Dédié aux voyageurs d\'élite.',
+    'footer.sampleReviews': 'Les avis affichés sont fournis à titre d\'exemple.',
 
     // Accommodations / Filters
     'filters.all': 'Toutes les Suites',

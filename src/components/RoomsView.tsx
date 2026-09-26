@@ -75,7 +75,7 @@ export default function RoomsView() {
           </div>
 
           {/* Interactive Price Range Slider */}
-          <div className="flex items-center space-x-6 shrink-0" id="price-slider-box">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 md:shrink-0" id="price-slider-box">
             <div className="flex items-center space-x-2 text-gold-400/80">
               <SlidersHorizontal className="w-4 h-4 text-gold-400" />
               <span className="text-[10px] font-sans uppercase tracking-[0.15em] font-semibold">{t('filters.price_limit')}</span>
