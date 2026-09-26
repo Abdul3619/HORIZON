@@ -34,7 +34,7 @@ const TESTIMONIALS = [
 ];
 
 export default function HomeView() {
-  const { setView, suites, reservation, updateReservation, t, language } = useHotel();
+  const { setView, suites, reservation, updateReservation, t, language, today } = useHotel();
   const [activeReviewIndex, setActiveReviewIndex] = useState(0);
 
   // Filter 3 top featured suites to display on Homepage
@@ -159,6 +159,8 @@ export default function HomeView() {
                 type="date"
                 required
                 value={reservation.checkIn}
+                min={today || undefined}
+                aria-label={t('bookbar.checkin')}
                 onChange={(e) => updateReservation({ checkIn: e.target.value })}
                 className="w-full bg-transparent border-0 text-cream px-0 py-2 text-xs focus:outline-none focus:ring-0 transition-colors font-mono"
               />
@@ -174,7 +176,8 @@ export default function HomeView() {
                 type="date"
                 required
                 value={reservation.checkOut}
-                min={reservation.checkIn}
+                min={reservation.checkIn || undefined}
+                aria-label={t('bookbar.checkout')}
                 onChange={(e) => updateReservation({ checkOut: e.target.value })}
                 className="w-full bg-transparent border-0 text-cream px-0 py-2 text-xs focus:outline-none focus:ring-0 transition-colors font-mono"
               />
@@ -214,7 +217,7 @@ export default function HomeView() {
       </section>
 
       {/* 3. BRAND LEGACY SPOTLIGHT (Split Screen Narrative) */}
-      <section className="py-24 max-w-7xl mx-auto px-6 md:px-12 border-b border-gold-400/10" id="legacy-section">
+      <section className="py-24 max-w-7xl mx-auto px-6 md:px-12 border-b border-gold-400/10 overflow-x-clip" id="legacy-section">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
           {/* Left: Text blocks */}
           <div className="lg:col-span-7 space-y-8 text-left">

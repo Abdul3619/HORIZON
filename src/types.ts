@@ -49,4 +49,5 @@ export interface HotelContextType {
   openSuiteLightbox: Suite | null;
   setOpenSuiteLightbox: (suite: Suite | null) => void;
   t: (key: string) => string;
+  today: string;
 }

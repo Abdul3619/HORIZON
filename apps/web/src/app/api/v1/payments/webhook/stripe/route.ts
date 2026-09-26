@@ -21,14 +21,12 @@ export async function POST(req: NextRequest) {
     let event: Stripe.Event;
 
     // Cryptographic signature validation
+    // Never trust an unsigned payload: without the webhook secret anyone could post a fake payment event
+    if (!stripeSecretKey || !webhookSecret) {
+      return NextResponse.json({ success: false, error: 'Stripe webhook is not configured' }, { status: 503 });
+    }
     try {
-      if (!stripeSecretKey || !webhookSecret) {
-        console.warn('⚠️ Stripe credentials or Webhook Secret missing. Emulating webhook payload parse for staging/development.');
-        // Parse directly for testing/local environments when secret is missing
-        event = JSON.parse(rawBody) as Stripe.Event;
-      } else {
-        event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
-      }
+      event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
     } catch (err: any) {
       console.error(`❌ Webhook cryptographic signature verification failed: ${err.message}`);
       return NextResponse.json({ success: false, error: 'Signature verification failed' }, { status: 400 });

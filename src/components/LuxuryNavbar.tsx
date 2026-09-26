@@ -133,6 +133,8 @@ export default function LuxuryNavbar() {
             {/* Menu burger */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={isMobileMenuOpen}
               className="p-1.5 text-cream hover:text-gold-400 transition-colors focus:outline-none"
               id="mobile-burger-trigger"
             >

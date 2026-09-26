@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { HotelProvider, useHotel } from './HotelContext';
+import type { View } from './types';
 import LuxuryNavbar from './components/LuxuryNavbar';
 import LuxuryFooter from './components/LuxuryFooter';
 import HomeView from './components/HomeView';
@@ -72,9 +73,9 @@ function AppContent() {
   );
 }
 
-export default function App() {
+export default function App({ initialView = 'home' }: { initialView?: View }) {
   return (
-    <HotelProvider>
+    <HotelProvider initialView={initialView}>
       <AppContent />
     </HotelProvider>
   );

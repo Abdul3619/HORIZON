@@ -297,7 +297,8 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'success.sub': 'Your sanctuary at L\'Horizon Royal awaits.',
     'success.ref': 'Booking Reference Code',
     'success.welcome': 'Welcome Package',
-    'success.welcome_desc': 'A private digital dossier and premium welcoming message has been sent to your registered address. Our lead concierge will contact you shortly.',
+    'success.welcome_desc': 'This is a demonstration booking: no payment was taken and no email was sent. In the live version, your confirmation and welcome dossier are emailed to you and our lead concierge contacts you before arrival.',
+    'checkout.demo_notice': 'Demo checkout: no payment is taken and card details never leave your browser. Please do not enter real card details.',
     'success.close': 'Return to Grand Foyer'
   },
   fr: {
@@ -416,44 +417,69 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'success.sub': 'Votre havre de paix à L\'Horizon Royal vous attend.',
     'success.ref': 'Référence de Réservation',
     'success.welcome': 'Carnet d\'Accueil VIP',
-    'success.welcome_desc': 'Un carnet numérique privé de bienvenue a été envoyé à votre adresse e-mail. Notre concierge en chef prendra contact avec vous très prochainement.',
+    'success.welcome_desc': "Ceci est une réservation de démonstration : aucun paiement n'a été effectué et aucun e-mail n'a été envoyé. Dans la version en ligne, votre confirmation et votre carnet de bienvenue vous sont envoyés par e-mail et notre concierge en chef vous contacte avant votre arrivée.",
+    'checkout.demo_notice': "Paiement de démonstration : aucun paiement n'est effectué et les données de carte ne quittent jamais votre navigateur. Merci de ne pas saisir de vraie carte.",
     'success.close': 'Retourner au Grand Hall'
   }
 };
 
 const HotelContext = createContext<HotelContextType | undefined>(undefined);
 
-export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentView, setView] = useState<View>('home');
+const VIEW_PATHS: Record<View, string> = { home: '/', rooms: '/rooms', booking: '/booking', admin: '/admin' };
+
+export function viewFromPath(pathname: string): View {
+  const path = pathname.replace(/\/+$/, '') || '/';
+  const match = (Object.keys(VIEW_PATHS) as View[]).find((v) => VIEW_PATHS[v] === path);
+  return match || 'home';
+}
+
+export const HotelProvider: React.FC<{ children: React.ReactNode; initialView?: View }> = ({ children, initialView = 'home' }) => {
+  const [currentView, setView] = useState<View>(initialView);
+
+  // Each view has its own URL so refresh, sharing and the browser back button work
+  useEffect(() => {
+    const onPopState = () => setView(viewFromPath(window.location.pathname));
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
   const [language, setLanguage] = useState<Language>('en');
   const [selectedSuite, setSelectedSuite] = useState<Suite | null>(null);
   const [openSuiteLightbox, setOpenSuiteLightbox] = useState<Suite | null>(null);
 
-  // Default initial dates: 3 days stay starting tomorrow
-  const getTomorrowString = (offset = 1) => {
-    const d = new Date();
-    d.setDate(d.getDate() + offset);
-    return d.toISOString().split('T')[0];
+  // yyyy-mm-dd in the visitor's local time (toISOString() is UTC and can be off by a day)
+  const localDateString = (offsetDays = 0, from: Date = new Date()) => {
+    const d = new Date(from);
+    d.setDate(d.getDate() + offsetDays);
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   };
 
+  // Dates start empty and are filled after mount, so the prerendered HTML (built on another day) and the first
+  // client render match. Default stay: 3 nights starting tomorrow.
+  const [today, setToday] = useState('');
   const [reservation, setReservationState] = useState<ReservationState>({
-    checkIn: getTomorrowString(1),
-    checkOut: getTomorrowString(4),
+    checkIn: '',
+    checkOut: '',
     guests: 2,
     selectedSuiteId: '',
     promoCode: '',
     discountPercentage: 0
   });
 
+  useEffect(() => {
+    setToday(localDateString(0));
+    setReservationState(prev => ({
+      ...prev,
+      checkIn: prev.checkIn || localDateString(1),
+      checkOut: prev.checkOut || localDateString(4),
+    }));
+  }, []);
+
   const updateReservation = (updates: Partial<ReservationState>) => {
     setReservationState(prev => {
       const newState = { ...prev, ...updates };
-      // Double check validity if date updates
+      // Keep check-out after check-in: slide it to two nights after the new arrival date
       if (updates.checkIn && newState.checkOut <= updates.checkIn) {
-        // Automatically slide checkout by 1 night
-        const d = new Date(updates.checkIn);
-        d.setDate(d.getDate() + 2);
-        newState.checkOut = d.toISOString().split('T')[0];
+        newState.checkOut = localDateString(2, new Date(`${updates.checkIn}T12:00:00`));
       }
       return newState;
     });
@@ -479,6 +505,9 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       value={{
         currentView,
         setView: (v) => {
+          if (window.location.pathname !== VIEW_PATHS[v]) {
+            window.history.pushState({ view: v }, '', VIEW_PATHS[v]);
+          }
           setView(v);
           window.scrollTo({ top: 0, behavior: 'smooth' });
         },
@@ -491,7 +520,8 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setSelectedSuite,
         openSuiteLightbox,
         setOpenSuiteLightbox,
-        t
+        t,
+        today
       }}
     >
       {children}
