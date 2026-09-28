@@ -248,6 +248,8 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'footer.address': '742 Boulevard de la Reine, Nice, France',
     'footer.rights': '© 2026 L\'Horizon Royal S.A. All rights reserved. Devised for elite travelers.',
     'footer.sampleReviews': 'Reviews shown are sample content.',
+    'footer.builtBy': 'Built by Abdulwahab Abdullahi',
+    'footer.contactDev': 'Contact the developer',
 
     // Accommodations / Filters
     'filters.all': 'All Sanctuary Rooms',
@@ -369,6 +371,8 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'footer.address': '742 Boulevard de la Reine, Nice, France',
     'footer.rights': '© 2026 L\'Horizon Royal S.A. Tous droits réservés. Dédié aux voyageurs d\'élite.',
     'footer.sampleReviews': 'Les avis affichés sont fournis à titre d\'exemple.',
+    'footer.builtBy': 'Réalisé par Abdulwahab Abdullahi',
+    'footer.contactDev': 'Contacter le développeur',
 
     // Accommodations / Filters
     'filters.all': 'Toutes les Suites',
