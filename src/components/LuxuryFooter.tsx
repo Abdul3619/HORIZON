@@ -154,6 +154,10 @@ export default function LuxuryFooter() {
         <div className="border-t border-gold-400/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4" id="footer-bottom">
           <p className="text-[10px] font-mono tracking-wider text-cream/35 text-center md:text-left">
             {t('footer.rights')} {t('footer.sampleReviews')}
+            <span className="block mt-1">
+              {t('footer.builtBy')} ·{' '}
+              <a href="mailto:abdulwahababdullahi3619@gmail.com" className="text-gold-400/70 hover:text-gold-400 transition-colors">{t('footer.contactDev')}</a>
+            </span>
           </p>
           <div className="flex items-center space-x-6 text-[10px] font-mono text-gold-400/40">
             <span>SOVEREIGN PRIVATE CLASS</span>

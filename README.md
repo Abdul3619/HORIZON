@@ -1,6 +1,6 @@
 # L'Horizon Royal
 
-Luxury resort website (English / French) with suites, a booking flow and a staff dashboard.
+I built this luxury resort website (English / French) for L'Horizon Royal. It has the suites, a booking flow and a staff dashboard.
 
 ## What is live vs. demo
 
