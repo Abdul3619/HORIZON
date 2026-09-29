@@ -1,9 +1,16 @@
 import React from 'react';
 import { useHotel } from '../HotelContext';
-import { Mail, Phone, MapPin, Instagram, Facebook, Compass } from 'lucide-react';
+import { Mail, Phone, MapPin } from 'lucide-react';
+import IllustrativeBadge from './IllustrativeBadge';
+import { VIEW_PATHS } from '../HotelContext';
+
+// Fictional contact details for this demo hotel: +33 1 99 00 xx xx is a range reserved in France for fiction,
+// and .example domains can never be registered.
+const PHONE = '+33 (0)1 99 00 45 50';
+const EMAIL = 'reservations@lhorizon-royal.example';
 
 export default function LuxuryFooter() {
-  const { setView, t } = useHotel();
+  const { setView, t, language } = useHotel();
 
   const handleNav = (view: 'home' | 'rooms' | 'booking') => {
     setView(view);
@@ -22,22 +29,23 @@ export default function LuxuryFooter() {
           <div className="flex flex-wrap gap-x-16 gap-y-6">
             <div className="flex flex-col">
               <span className="font-serif text-3xl text-gold-400 mb-1">01.</span>
-              <span className="text-[11px] uppercase tracking-widest opacity-50 font-sans font-semibold">Michelin Dining</span>
+              <span className="text-[11px] uppercase tracking-widest text-cream/70 font-sans font-semibold">Michelin Dining</span>
             </div>
             <div className="flex flex-col">
               <span className="font-serif text-3xl text-gold-400 mb-1">14k</span>
-              <span className="text-[11px] uppercase tracking-widest opacity-50 font-sans font-semibold">Sq. Ft Wellness</span>
+              <span className="text-[11px] uppercase tracking-widest text-cream/70 font-sans font-semibold">Sq. Ft Wellness</span>
             </div>
             <div className="flex flex-col">
               <span className="font-serif text-3xl text-gold-400 mb-1">24/7</span>
-              <span className="text-[11px] uppercase tracking-widest opacity-50 font-sans font-semibold">Personal Butler</span>
+              <span className="text-[11px] uppercase tracking-widest text-cream/70 font-sans font-semibold">Personal Butler</span>
             </div>
           </div>
 
           <div className="flex items-center space-x-6">
             <div className="w-12 h-[1px] bg-white/20 hidden sm:block"></div>
-            <p className="max-w-xs text-[11px] leading-relaxed opacity-40 font-light text-left lg:text-right font-sans">
+            <p className="max-w-xs text-[11px] leading-relaxed text-cream/70 font-light text-left lg:text-right font-sans">
               Named 'Palace of the Year' by the Elite Travel Guild for five consecutive seasons of uncompromising excellence.
+              <span className="block mt-2 text-gold-400"><IllustrativeBadge label={language === 'en' ? 'Illustrative example' : 'Exemple illustratif'} /></span>
             </p>
           </div>
         </div>
@@ -56,17 +64,6 @@ export default function LuxuryFooter() {
             <p className="text-xs text-cream/50 leading-relaxed font-sans font-light">
               {t('footer.desc')}
             </p>
-            <div className="flex items-center space-x-4 pt-2">
-              <a href="#instagram" className="w-8 h-8 rounded-full border border-gold-400/10 flex items-center justify-center hover:border-gold-400/50 hover:text-gold-400 transition-all duration-300">
-                <Instagram className="w-3.5 h-3.5" />
-              </a>
-              <a href="#facebook" className="w-8 h-8 rounded-full border border-gold-400/10 flex items-center justify-center hover:border-gold-400/50 hover:text-gold-400 transition-all duration-300">
-                <Facebook className="w-3.5 h-3.5" />
-              </a>
-              <a href="#compass" className="w-8 h-8 rounded-full border border-gold-400/10 flex items-center justify-center hover:border-gold-400/50 hover:text-gold-400 transition-all duration-300">
-                <Compass className="w-3.5 h-3.5" />
-              </a>
-            </div>
           </div>
 
           {/* Quick Navigation Column */}
@@ -109,17 +106,29 @@ export default function LuxuryFooter() {
             </h4>
             <ul className="space-y-3.5 text-xs font-sans font-light">
               <li>
-                <a href="#legal" className="hover:text-gold-400 transition-colors duration-200">
+                <a
+                  href={VIEW_PATHS.terms}
+                  onClick={(e) => { e.preventDefault(); setView('terms'); }}
+                  className="hover:text-gold-400 transition-colors duration-200"
+                >
                   {t('footer.legal1')}
                 </a>
               </li>
               <li>
-                <a href="#privacy" className="hover:text-gold-400 transition-colors duration-200">
+                <a
+                  href={VIEW_PATHS.privacy}
+                  onClick={(e) => { e.preventDefault(); setView('privacy'); }}
+                  className="hover:text-gold-400 transition-colors duration-200"
+                >
                   {t('footer.legal2')}
                 </a>
               </li>
               <li>
-                <a href="#cookies" className="hover:text-gold-400 transition-colors duration-200">
+                <a
+                  href={VIEW_PATHS.cookies}
+                  onClick={(e) => { e.preventDefault(); setView('cookies'); }}
+                  className="hover:text-gold-400 transition-colors duration-200"
+                >
                   {t('footer.legal3')}
                 </a>
               </li>
@@ -138,12 +147,12 @@ export default function LuxuryFooter() {
               </li>
               <li className="flex items-center space-x-3">
                 <Phone className="w-4 h-4 text-gold-400 shrink-0" />
-                <span className="text-cream/80 font-medium">+33 (0)4 93 24 55 00</span>
+                <span className="text-cream/80 font-medium">{PHONE}</span>
               </li>
               <li className="flex items-center space-x-3">
                 <Mail className="w-4 h-4 text-gold-400 shrink-0" />
-                <a href="mailto:reservations@lhorizonroyal.com" className="hover:text-gold-400 transition-colors">
-                  reservations@lhorizonroyal.com
+                <a href={`mailto:${EMAIL}`} className="hover:text-gold-400 transition-colors break-all">
+                  {EMAIL}
                 </a>
               </li>
             </ul>
@@ -152,14 +161,14 @@ export default function LuxuryFooter() {
 
         {/* Bottom Legal bar */}
         <div className="border-t border-gold-400/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4" id="footer-bottom">
-          <p className="text-[10px] font-mono tracking-wider text-cream/35 text-center md:text-left">
+          <p className="text-[10px] font-mono tracking-wider text-cream/60 text-center md:text-left">
             {t('footer.rights')} {t('footer.sampleReviews')}
             <span className="block mt-1">
               {t('footer.builtBy')} ·{' '}
-              <a href="mailto:abdulwahababdullahi3619@gmail.com" className="text-gold-400/70 hover:text-gold-400 transition-colors">{t('footer.contactDev')}</a>
+              <a href="mailto:abdulwahababdullahi3619@gmail.com" className="text-gold-400 underline hover:text-gold-400 transition-colors">{t('footer.contactDev')}</a>
             </span>
           </p>
-          <div className="flex items-center space-x-6 text-[10px] font-mono text-gold-400/40">
+          <div className="flex items-center space-x-6 text-[10px] font-mono text-gold-400/70">
             <span>SOVEREIGN PRIVATE CLASS</span>
             <span>SECURED SSL</span>
           </div>

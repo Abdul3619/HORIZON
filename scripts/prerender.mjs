@@ -1,4 +1,4 @@
-// Renders the public views to HTML at build time (index.html, rooms.html, booking.html), so the content is in the
+// Renders the public views to HTML at build time (index, rooms, booking and the legal pages), so the content is in the
 // initial HTML for search engines, link previews and no-JS visitors. The browser then hydrates it.
 // The admin view is not prerendered; it renders client-side.
 import fs from 'fs';
@@ -17,7 +17,7 @@ if (!template.includes(placeholder)) {
 
 const { render } = await import(pathToFileURL(path.join(ssrDir, 'entry-server.js')).href);
 
-for (const [view, file] of [['home', 'index.html'], ['rooms', 'rooms.html'], ['booking', 'booking.html']]) {
+for (const [view, file] of [['home', 'index.html'], ['rooms', 'rooms.html'], ['booking', 'booking.html'], ['privacy', 'privacy.html'], ['terms', 'terms.html'], ['cookies', 'cookies.html']]) {
   const html = render(view);
   fs.writeFileSync(path.join(distDir, file), template.replace(placeholder, () => `<div id="root" data-view="${view}">${html}</div>`));
   console.log(`prerender: ${file} (${html.length} characters)`);

@@ -12,6 +12,7 @@ import HomeView from './components/HomeView';
 import RoomsView from './components/RoomsView';
 import BookingView from './components/BookingView';
 import AdminDashboard from './components/AdminDashboard';
+import LegalView from './components/LegalView';
 import { motion, AnimatePresence } from 'motion/react';
 
 function AppContent() {
@@ -62,6 +63,11 @@ function AppContent() {
               transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             >
               <BookingView />
+            </motion.div>
+          )}
+          {(currentView === 'privacy' || currentView === 'terms' || currentView === 'cookies') && (
+            <motion.div key={currentView} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6 }}>
+              <LegalView view={currentView} />
             </motion.div>
           )}
         </AnimatePresence>

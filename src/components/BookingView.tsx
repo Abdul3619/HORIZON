@@ -223,7 +223,7 @@ export default function BookingView() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div className="space-y-2">
-                        <label className="text-[10px] uppercase tracking-widest text-cream/40 font-mono">{t('bookbar.checkin')}</label>
+                        <label className="text-[10px] uppercase tracking-widest text-cream/60 font-mono">{t('bookbar.checkin')}</label>
                         <input
                           type="date"
                           required
@@ -236,7 +236,7 @@ export default function BookingView() {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[10px] uppercase tracking-widest text-cream/40 font-mono">{t('bookbar.checkout')}</label>
+                        <label className="text-[10px] uppercase tracking-widest text-cream/60 font-mono">{t('bookbar.checkout')}</label>
                         <input
                           type="date"
                           required
@@ -249,7 +249,7 @@ export default function BookingView() {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[10px] uppercase tracking-widest text-cream/40 font-mono">{t('bookbar.guests')}</label>
+                        <label className="text-[10px] uppercase tracking-widest text-cream/60 font-mono">{t('bookbar.guests')}</label>
                         <select
                           value={reservation.guests}
                           onChange={(e) => updateReservation({ guests: parseInt(e.target.value) })}
@@ -274,7 +274,7 @@ export default function BookingView() {
 
                     <div className="space-y-5">
                       <div className="space-y-2">
-                        <label className="text-[10px] uppercase tracking-widest text-cream/40 font-mono">{t('checkout.full_name')}</label>
+                        <label className="text-[10px] uppercase tracking-widest text-cream/60 font-mono">{t('checkout.full_name')}</label>
                         <input
                           type="text"
                           required
@@ -287,7 +287,7 @@ export default function BookingView() {
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <label className="text-[10px] uppercase tracking-widest text-cream/40 font-mono">{t('checkout.email')}</label>
+                          <label className="text-[10px] uppercase tracking-widest text-cream/60 font-mono">{t('checkout.email')}</label>
                           <input
                             type="email"
                             required
@@ -299,7 +299,7 @@ export default function BookingView() {
                         </div>
 
                         <div className="space-y-2">
-                          <label className="text-[10px] uppercase tracking-widest text-cream/40 font-mono">{t('checkout.phone')}</label>
+                          <label className="text-[10px] uppercase tracking-widest text-cream/60 font-mono">{t('checkout.phone')}</label>
                           <input
                             type="tel"
                             required
@@ -332,7 +332,7 @@ export default function BookingView() {
 
                     <div className="space-y-5">
                       <div className="space-y-2">
-                        <label className="text-[10px] uppercase tracking-widest text-cream/40 font-mono">{t('checkout.card_name')}</label>
+                        <label className="text-[10px] uppercase tracking-widest text-cream/60 font-mono">{t('checkout.card_name')}</label>
                         <input
                           type="text"
                           required
@@ -346,7 +346,7 @@ export default function BookingView() {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[10px] uppercase tracking-widest text-cream/40 font-mono">{t('checkout.card_num')}</label>
+                        <label className="text-[10px] uppercase tracking-widest text-cream/60 font-mono">{t('checkout.card_num')}</label>
                         <input
                           type="text"
                           required
@@ -363,7 +363,7 @@ export default function BookingView() {
 
                       <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <label className="text-[10px] uppercase tracking-widest text-cream/40 font-mono">{t('checkout.card_exp')}</label>
+                          <label className="text-[10px] uppercase tracking-widest text-cream/60 font-mono">{t('checkout.card_exp')}</label>
                           <input
                             type="text"
                             required
@@ -378,7 +378,7 @@ export default function BookingView() {
                         </div>
 
                         <div className="space-y-2">
-                          <label className="text-[10px] uppercase tracking-widest text-cream/40 font-mono">{t('checkout.card_cvv')}</label>
+                          <label className="text-[10px] uppercase tracking-widest text-cream/60 font-mono">{t('checkout.card_cvv')}</label>
                           <input
                             type="password"
                             required
@@ -477,7 +477,7 @@ export default function BookingView() {
                       </div>
                     </div>
                   ) : (
-                    <p className="text-xs text-cream/40 italic font-sans font-light py-4 text-center">
+                    <p className="text-xs text-cream/60 italic font-sans font-light py-4 text-center">
                       {t('bookbar.select_room_prompt')}
                     </p>
                   )}
@@ -485,7 +485,7 @@ export default function BookingView() {
                   {/* Promo Code input system */}
                   {currentSuite && (
                     <div className="border-t border-gold-400/10 pt-6 space-y-3">
-                      <label className="text-[10px] uppercase tracking-widest text-cream/40 font-mono block">
+                      <label className="text-[10px] uppercase tracking-widest text-cream/60 font-mono block">
                         {t('checkout.promo_label')}
                       </label>
                       <div className="flex gap-2.5">
@@ -521,7 +521,7 @@ export default function BookingView() {
                         </p>
                       )}
 
-                      <div className="bg-obsidian/50 p-3 border border-gold-400/5 rounded-none mt-4 text-[11px] text-cream/40 leading-relaxed font-sans font-light">
+                      <div className="bg-obsidian/50 p-3 border border-gold-400/5 rounded-none mt-4 text-[11px] text-cream/60 leading-relaxed font-sans font-light">
                         Tip: Enter promo code <strong className="text-gold-400">ROYAL15</strong> to apply 15% discount. Or <strong className="text-gold-400">LHORIZON</strong> for 20%.
                       </div>
                     </div>
@@ -557,12 +557,12 @@ export default function BookingView() {
               {/* Booking specifications reference sheet */}
               <div className="bg-obsidian/60 border border-gold-400/10 p-5 space-y-4 text-left font-sans">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-cream/40 uppercase tracking-widest">{t('success.ref')}</span>
+                  <span className="text-cream/60 uppercase tracking-widest">{t('success.ref')}</span>
                   <div className="flex items-center space-x-2">
                     <span className="font-mono text-gold-400 font-semibold tracking-wider select-all">{mockBookingRef}</span>
                     <button
                       onClick={() => navigator.clipboard?.writeText(mockBookingRef).catch(() => {})}
-                      className="text-cream/40 hover:text-gold-400 p-0.5 transition-colors"
+                      className="text-cream/60 hover:text-gold-400 p-0.5 transition-colors"
                       aria-label="Copy booking reference"
                       title="Copy code"
                     >
@@ -575,19 +575,19 @@ export default function BookingView() {
 
                 <div className="grid grid-cols-2 gap-4 text-xs font-light">
                   <div>
-                    <span className="text-cream/40 block text-[9px] uppercase tracking-widest mb-1">Lead Guest</span>
+                    <span className="text-cream/60 block text-[9px] uppercase tracking-widest mb-1">Lead Guest</span>
                     <span className="text-cream/90 font-medium">{fullName}</span>
                   </div>
                   <div>
-                    <span className="text-cream/40 block text-[9px] uppercase tracking-widest mb-1">{t('nav.rooms')}</span>
+                    <span className="text-cream/60 block text-[9px] uppercase tracking-widest mb-1">{t('nav.rooms')}</span>
                     <span className="text-cream/90 font-medium truncate block">{currentSuite?.name[language]}</span>
                   </div>
                   <div>
-                    <span className="text-cream/40 block text-[9px] uppercase tracking-widest mb-1">{t('bookbar.checkin')}</span>
+                    <span className="text-cream/60 block text-[9px] uppercase tracking-widest mb-1">{t('bookbar.checkin')}</span>
                     <span className="font-mono text-cream/90">{reservation.checkIn}</span>
                   </div>
                   <div>
-                    <span className="text-cream/40 block text-[9px] uppercase tracking-widest mb-1">{t('bookbar.checkout')}</span>
+                    <span className="text-cream/60 block text-[9px] uppercase tracking-widest mb-1">{t('bookbar.checkout')}</span>
                     <span className="font-mono text-cream/90">{reservation.checkOut}</span>
                   </div>
                 </div>

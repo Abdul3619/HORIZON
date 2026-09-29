@@ -431,7 +431,9 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
 
 const HotelContext = createContext<HotelContextType | undefined>(undefined);
 
-const VIEW_PATHS: Record<View, string> = { home: '/', rooms: '/rooms', booking: '/booking', admin: '/admin' };
+export const VIEW_PATHS: Record<View, string> = {
+  home: '/', rooms: '/rooms', booking: '/booking', admin: '/admin', privacy: '/privacy', terms: '/terms', cookies: '/cookies',
+};
 
 export function viewFromPath(pathname: string): View {
   const path = pathname.replace(/\/+$/, '') || '/';
@@ -471,14 +473,43 @@ export const HotelProvider: React.FC<{ children: React.ReactNode; initialView?: 
     discountPercentage: 0
   });
 
+  // Language and the stay being planned (dates, guests, suite) are remembered on this device, so a visitor who
+  // comes back picks up where they left off. Loaded after mount so the prerendered HTML still matches.
+  const [restored, setRestored] = useState(false);
   useEffect(() => {
-    setToday(localDateString(0));
+    const todayStr = localDateString(0);
+    setToday(todayStr);
+    let saved: Partial<ReservationState> = {};
+    try {
+      const lang = window.localStorage.getItem('horizon:lang');
+      if (lang === 'en' || lang === 'fr') setLanguage(lang);
+      saved = JSON.parse(window.localStorage.getItem('horizon:stay') || '{}');
+    } catch {
+      // Storage unavailable or corrupt: start fresh.
+    }
+    const validDates = typeof saved.checkIn === 'string' && saved.checkIn > todayStr && typeof saved.checkOut === 'string' && saved.checkOut > saved.checkIn;
+    const suiteExists = SUITES_DATA.some((s) => s.id === saved.selectedSuiteId);
     setReservationState(prev => ({
       ...prev,
-      checkIn: prev.checkIn || localDateString(1),
-      checkOut: prev.checkOut || localDateString(4),
+      checkIn: validDates ? saved.checkIn! : prev.checkIn || localDateString(1),
+      checkOut: validDates ? saved.checkOut! : prev.checkOut || localDateString(4),
+      guests: Number.isInteger(saved.guests) && saved.guests! >= 1 && saved.guests! <= 8 ? saved.guests! : prev.guests,
+      selectedSuiteId: suiteExists ? saved.selectedSuiteId! : prev.selectedSuiteId,
     }));
+    if (suiteExists) setSelectedSuite(SUITES_DATA.find((s) => s.id === saved.selectedSuiteId) ?? null);
+    setRestored(true);
   }, []);
+
+  useEffect(() => {
+    if (!restored) return;
+    try {
+      const { checkIn, checkOut, guests, selectedSuiteId } = reservation;
+      window.localStorage.setItem('horizon:stay', JSON.stringify({ checkIn, checkOut, guests, selectedSuiteId }));
+      window.localStorage.setItem('horizon:lang', language);
+    } catch {
+      // Ignore storage errors.
+    }
+  }, [restored, reservation, language]);
 
   const updateReservation = (updates: Partial<ReservationState>) => {
     setReservationState(prev => {
