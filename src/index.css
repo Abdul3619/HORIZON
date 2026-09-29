@@ -46,3 +46,41 @@ html {
   background: #c5a880;
 }
 
+
+/* Loading skeletons: a placeholder block with a diagonal silver shimmer.
+   With reduced motion the sweep is replaced by a slow, gentle fade. */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: rgba(148, 148, 160, 0.18);
+  border-radius: 6px;
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(110deg, transparent 20%, rgba(235, 238, 245, 0.45) 45%, rgba(255, 255, 255, 0.6) 50%, rgba(235, 238, 245, 0.45) 55%, transparent 80%);
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+@keyframes skeleton-shimmer {
+  to { transform: translateX(100%); }
+}
+@keyframes skeleton-fade {
+  50% { opacity: 0.55; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after { animation: none; opacity: 0; }
+  .skeleton { animation: skeleton-fade 2.4s ease-in-out infinite; }
+}
+
+/* Small, consistent press feedback for buttons and button-like links */
+.press {
+  transition: transform 150ms ease, filter 150ms ease;
+}
+.press:active {
+  transform: scale(0.97);
+}
+@media (prefers-reduced-motion: reduce) {
+  .press:active { transform: none; filter: brightness(0.92); }
+}

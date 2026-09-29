@@ -33,7 +33,7 @@ export interface ReservationState {
   discountPercentage: number;
 }
 
-export type View = 'home' | 'rooms' | 'booking' | 'admin';
+export type View = 'home' | 'rooms' | 'booking' | 'admin' | 'privacy' | 'terms' | 'cookies';
 export type Language = 'en' | 'fr';
 
 export interface HotelContextType {

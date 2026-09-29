@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useHotel } from '../HotelContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { Calendar, Users, ArrowRight, Star, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import IllustrativeBadge from './IllustrativeBadge';
+import PackagesSection from './PackagesSection';
 
 const TESTIMONIALS = [
   {
@@ -80,7 +82,7 @@ export default function HomeView() {
             <div className="absolute inset-0 bg-gradient-to-t from-obsidian via-obsidian/40 to-transparent" />
             <div className="absolute bottom-28 right-12 text-right hidden lg:block">
               <p className="font-serif italic text-2xl mb-1 text-gold-400 font-light">The Royal Suite</p>
-              <p className="text-[10px] uppercase tracking-[0.2em] opacity-50 font-sans">L'Horizon Royal, France</p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-cream/70 font-sans">L'Horizon Royal, France</p>
             </div>
           </div>
         </div>
@@ -129,7 +131,7 @@ export default function HomeView() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.2, duration: 1 }}
-            className="hidden md:flex flex-col items-center absolute bottom-12 text-cream/40"
+            className="hidden md:flex flex-col items-center absolute bottom-12 text-cream/60"
             id="scroll-indicator"
           >
             <span className="text-[9px] uppercase tracking-[0.3em] mb-2 font-sans font-medium">
@@ -190,6 +192,7 @@ export default function HomeView() {
                 <span>{t('bookbar.guests')}</span>
               </label>
               <select
+                aria-label={t('bookbar.guests')}
                 value={reservation.guests}
                 onChange={(e) => updateReservation({ guests: parseInt(e.target.value) })}
                 className="w-full bg-transparent border-0 text-cream px-0 py-2 text-xs focus:outline-none focus:ring-0 transition-colors font-sans cursor-pointer"
@@ -323,13 +326,13 @@ export default function HomeView() {
 
                 <div className="flex items-center justify-between border-t border-gold-400/5 pt-5">
                   <div className="flex flex-col">
-                    <span className="text-[10px] text-cream/40 uppercase tracking-widest font-sans">{language === 'en' ? 'From Rate' : 'À partir de'}</span>
+                    <span className="text-[10px] text-cream/60 uppercase tracking-widest font-sans">{language === 'en' ? 'From Rate' : 'À partir de'}</span>
                     <span className="font-serif text-xl font-light text-gold-400">
                       ${suite.price} <span className="text-[10px] font-sans text-cream/50">/ {t('filters.night')}</span>
                     </span>
                   </div>
                   <div className="text-right flex flex-col items-end">
-                    <span className="text-[10px] text-cream/40 uppercase tracking-widest font-sans">{t('filters.size_label')}</span>
+                    <span className="text-[10px] text-cream/60 uppercase tracking-widest font-sans">{t('filters.size_label')}</span>
                     <span className="text-xs font-mono font-medium text-cream/80">{suite.size} m²</span>
                   </div>
                 </div>
@@ -379,9 +382,11 @@ export default function HomeView() {
                 <Sparkles className="w-5 h-5 text-gold-400" />
               </div>
               <h3 className="font-serif text-xl font-light text-cream">{t('luxuries.dining')}</h3>
-              <p className="text-xs text-cream/50 leading-relaxed font-sans font-light">
+              <p className="text-xs text-cream/70 leading-relaxed font-sans font-light">
                 {t('luxuries.dining_desc')}
               </p>
+              {/* The Michelin stars and chef are invented for this demo */}
+              <p className="text-gold-400"><IllustrativeBadge label={language === 'en' ? 'Illustrative example' : 'Exemple illustratif'} /></p>
             </div>
 
             {/* Infinity Pool */}
@@ -408,6 +413,8 @@ export default function HomeView() {
           </div>
         </div>
       </section>
+
+      <PackagesSection />
 
       {/* 6. CULINARY SHOWCASE */}
       <section className="py-24 max-w-7xl mx-auto px-6 md:px-12" id="culinary-section">
@@ -466,6 +473,7 @@ export default function HomeView() {
             <h2 className="font-serif text-2xl md:text-4xl font-light tracking-wide text-cream">
               {t('reviews.title')}
             </h2>
+            <p className="text-gold-400"><IllustrativeBadge label={language === 'en' ? 'Sample reviews' : 'Avis fictifs'} /></p>
           </div>
 
           {/* Testimonial slider space */}
@@ -486,7 +494,7 @@ export default function HomeView() {
                   <p className="font-sans text-xs uppercase tracking-widest text-gold-400 font-bold">
                     {TESTIMONIALS[activeReviewIndex].author}
                   </p>
-                  <p className="font-mono text-[10px] text-cream/40">
+                  <p className="font-mono text-[10px] text-cream/60">
                     {TESTIMONIALS[activeReviewIndex].location}
                   </p>
                 </div>
@@ -505,10 +513,11 @@ export default function HomeView() {
             <div className="flex items-center space-x-4">
               <button
                 onClick={handlePrevReview}
+                aria-label={language === 'en' ? 'Previous review' : 'Avis précédent'}
                 className="w-10 h-10 border border-gold-400/10 rounded-full flex items-center justify-center text-cream/60 hover:text-gold-400 hover:border-gold-400 transition-all duration-300"
                 id="review-prev-btn"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <ChevronLeft className="w-5 h-5" aria-hidden="true" />
               </button>
               
               <div className="flex items-center space-x-2">
@@ -516,6 +525,8 @@ export default function HomeView() {
                   <button
                     key={idx}
                     onClick={() => setActiveReviewIndex(idx)}
+                    aria-label={`${language === 'en' ? 'Review' : 'Avis'} ${idx + 1}`}
+                    aria-current={idx === activeReviewIndex ? 'true' : undefined}
                     className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
                       idx === activeReviewIndex ? 'bg-gold-400 w-4' : 'bg-gold-400/20'
                     }`}
@@ -525,10 +536,11 @@ export default function HomeView() {
 
               <button
                 onClick={handleNextReview}
+                aria-label={language === 'en' ? 'Next review' : 'Avis suivant'}
                 className="w-10 h-10 border border-gold-400/10 rounded-full flex items-center justify-center text-cream/60 hover:text-gold-400 hover:border-gold-400 transition-all duration-300"
                 id="review-next-btn"
               >
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
           </div>

@@ -93,17 +93,21 @@ export default function LuxuryNavbar() {
           {/* Right: Actions */}
           <div className="hidden md:flex items-center space-x-10" id="desktop-actions">
             {/* EN/FR Language Indicator */}
-            <div className="flex items-center space-x-4 text-[11px] font-semibold opacity-60 text-cream">
+            <div className="flex items-center space-x-4 text-[11px] font-semibold text-cream" role="group" aria-label="Language">
               <button
                 onClick={() => { if (language !== 'en') toggleLanguage(); }}
-                className={`hover:opacity-100 transition-all ${language === 'en' ? 'text-gold-400 font-bold opacity-100' : 'opacity-50'}`}
+                aria-pressed={language === 'en'}
+                aria-label="English"
+                className={`transition-all ${language === 'en' ? 'text-gold-400 font-bold' : 'text-cream/75 hover:text-cream'}`}
               >
                 EN
               </button>
-              <span className="opacity-30">|</span>
+              <span className="text-cream/60" aria-hidden="true">|</span>
               <button
                 onClick={() => { if (language !== 'fr') toggleLanguage(); }}
-                className={`hover:opacity-100 transition-all ${language === 'fr' ? 'text-gold-400 font-bold opacity-100' : 'opacity-50'}`}
+                aria-pressed={language === 'fr'}
+                aria-label="Français"
+                className={`transition-all ${language === 'fr' ? 'text-gold-400 font-bold' : 'text-cream/75 hover:text-cream'}`}
               >
                 FR
               </button>
@@ -208,7 +212,7 @@ export default function LuxuryNavbar() {
                 <span>{t('nav.reserve')}</span>
               </button>
 
-              <div className="flex items-center justify-between text-[11px] text-cream/40 font-mono">
+              <div className="flex items-center justify-between text-[11px] text-cream/60 font-mono">
                 <span>{t('footer.address')}</span>
                 <span className="text-gold-400/60 font-sans uppercase tracking-[0.1em]">L'HORIZON ROYAL</span>
               </div>
