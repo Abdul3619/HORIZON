@@ -23,7 +23,10 @@ import {
   LogOut,
   RefreshCw,
   Sliders,
-  Database
+  Database,
+  Image,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 import { adminSupabase } from '../lib/adminClient';
@@ -62,11 +65,27 @@ interface AuditLog {
   timestamp: string;
 }
 
+interface RoomClass {
+  id: string;
+  name: string;
+  images: string[];
+}
+
+interface GalleryItem {
+  id: string;
+  room_class_id: string | null;
+  title: string;
+  url: string;
+  category: string;
+}
+
 // Real data now loads from Supabase (horizon_admin_list_dashboard) once the session token is known -- see
 // the data-loading effect below. These stay as the pre-load/empty state.
 const INITIAL_ROOMS: Room[] = [];
 const INITIAL_BOOKINGS: Booking[] = [];
 const INITIAL_AUDIT_LOGS: AuditLog[] = [];
+const INITIAL_ROOM_CLASSES: RoomClass[] = [];
+const INITIAL_GALLERY: GalleryItem[] = [];
 
 // Recharts simulated financial performance data
 const REVENUE_DATA = [
@@ -93,7 +112,7 @@ export default function AdminDashboard({ sessionToken }: { sessionToken: string 
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [activeTab, setActiveTab] = useState<'rooms' | 'bookings' | 'analytics' | 'settings'>('rooms');
+  const [activeTab, setActiveTab] = useState<'rooms' | 'bookings' | 'analytics' | 'gallery' | 'settings'>('rooms');
   
   // Custom Claim / RBAC Role Selector simulating real authorization claims parsed from JWT App Metadata
   const [activeRole, setActiveRole] = useState<'admin' | 'manager' | 'receptionist' | 'staff' | 'customer'>('admin');
@@ -102,6 +121,16 @@ export default function AdminDashboard({ sessionToken }: { sessionToken: string 
   const [rooms, setRooms] = useState<Room[]>(INITIAL_ROOMS);
   const [bookings, setBookings] = useState<Booking[]>(INITIAL_BOOKINGS);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
+  const [roomClasses, setRoomClasses] = useState<RoomClass[]>(INITIAL_ROOM_CLASSES);
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(INITIAL_GALLERY);
+
+  // Gallery tab working state
+  const [galleryRoomClassId, setGalleryRoomClassId] = useState<string>('');
+  const [galleryNewImageUrl, setGalleryNewImageUrl] = useState('');
+  const [galleryError, setGalleryError] = useState('');
+  const [newGalleryTitle, setNewGalleryTitle] = useState('');
+  const [newGalleryUrl, setNewGalleryUrl] = useState('');
+  const [newGalleryCategory, setNewGalleryCategory] = useState('');
   
   // Admin action alerts (errors, confirmations) -- starts empty now that the dashboard runs on real data
   // instead of the scripted demo notifications it used to seed itself with.
@@ -145,6 +174,8 @@ export default function AdminDashboard({ sessionToken }: { sessionToken: string 
       const payload = data as {
         rooms: Array<{ id: string; room_number: string; floor: number; status: string; room_class_id: string; room_class: string; price: number; images: string[] }>;
         bookings: Array<{ id: string; guest_name: string; email: string; room_class: string; check_in: string; check_out: string; status: Booking['status']; total_amount: number }>;
+        room_classes?: Array<{ id: string; name: string; images: string[] | null }>;
+        gallery?: Array<{ id: string; room_class_id: string | null; title: string; url: string; category: string }>;
         audit_logs: Array<{ id: string; action: string; table_name: string; created_at: string }>;
       };
       setRooms(payload.rooms.map(r => ({
@@ -153,6 +184,10 @@ export default function AdminDashboard({ sessionToken }: { sessionToken: string 
         price: r.price, images: r.images || []
       })));
       setBookings(payload.bookings);
+      setRoomClasses((payload.room_classes || []).map(rc => ({
+        id: rc.id, name: rc.name, images: rc.images || []
+      })));
+      setGalleryItems(payload.gallery || []);
       setAuditLogs(payload.audit_logs.map(a => ({
         id: a.id, actor: 'System', role: 'admin', action: a.action, table_name: a.table_name,
         record_id: '', changes: `${a.action} on ${a.table_name}`,
@@ -213,6 +248,130 @@ export default function AdminDashboard({ sessionToken }: { sessionToken: string 
       table_name: 'bookings',
       record_id: bookingId,
       changes: `Changed booking status for ${targetB.guest_name} to ${nextStatus}`,
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19)
+    };
+    setAuditLogs(prev => [newLog, ...prev]);
+  };
+
+  // Handler: add an image to a room class's gallery -- writes the FULL updated images array through
+  // horizon_admin_set_room_class_images (that RPC replaces the array wholesale, it doesn't append).
+  const handleAddRoomClassImage = async (roomClassId: string, url: string) => {
+    setGalleryError('');
+    const trimmed = url.trim();
+    if (!trimmed) return;
+    const targetClass = roomClasses.find(rc => rc.id === roomClassId);
+    if (!adminSupabase || !targetClass) return;
+    const nextImages = [...targetClass.images, trimmed];
+    const { error } = await adminSupabase.rpc('horizon_admin_set_room_class_images', {
+      p_session_token: sessionToken, p_room_class_id: roomClassId, p_images: nextImages
+    });
+    if (error) {
+      setGalleryError(`Could not add image to ${targetClass.name}: ${error.message}`);
+      return;
+    }
+    setRoomClasses(prev => prev.map(rc => rc.id === roomClassId ? { ...rc, images: nextImages } : rc));
+    setGalleryNewImageUrl('');
+    const newLog: AuditLog = {
+      id: `LOG-${Math.floor(Math.random() * 1000) + 100}`,
+      actor: `${activeRole.toUpperCase()} Session`,
+      role: activeRole,
+      action: 'ADD_ROOM_CLASS_IMAGE',
+      table_name: 'room_classes',
+      record_id: roomClassId,
+      changes: `Added a gallery photo to ${targetClass.name}`,
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19)
+    };
+    setAuditLogs(prev => [newLog, ...prev]);
+  };
+
+  // Handler: remove one image from a room class's gallery -- same whole-array-replace RPC, minus one entry.
+  const handleRemoveRoomClassImage = async (roomClassId: string, url: string) => {
+    setGalleryError('');
+    const targetClass = roomClasses.find(rc => rc.id === roomClassId);
+    if (!adminSupabase || !targetClass) return;
+    const nextImages = targetClass.images.filter(img => img !== url);
+    const { error } = await adminSupabase.rpc('horizon_admin_set_room_class_images', {
+      p_session_token: sessionToken, p_room_class_id: roomClassId, p_images: nextImages
+    });
+    if (error) {
+      setGalleryError(`Could not remove image from ${targetClass.name}: ${error.message}`);
+      return;
+    }
+    setRoomClasses(prev => prev.map(rc => rc.id === roomClassId ? { ...rc, images: nextImages } : rc));
+    const newLog: AuditLog = {
+      id: `LOG-${Math.floor(Math.random() * 1000) + 100}`,
+      actor: `${activeRole.toUpperCase()} Session`,
+      role: activeRole,
+      action: 'REMOVE_ROOM_CLASS_IMAGE',
+      table_name: 'room_classes',
+      record_id: roomClassId,
+      changes: `Removed a gallery photo from ${targetClass.name}`,
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19)
+    };
+    setAuditLogs(prev => [newLog, ...prev]);
+  };
+
+  // Handler: add a general gallery item -- writes through horizon_admin_add_gallery_item.
+  const handleAddGalleryItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setGalleryError('');
+    if (!adminSupabase || !newGalleryTitle.trim() || !newGalleryUrl.trim()) return;
+    const { data, error } = await adminSupabase.rpc('horizon_admin_add_gallery_item', {
+      p_session_token: sessionToken,
+      p_room_class_id: galleryRoomClassId || null,
+      p_url: newGalleryUrl.trim(),
+      p_title: newGalleryTitle.trim(),
+      p_category: newGalleryCategory.trim() || 'general'
+    });
+    if (error) {
+      setGalleryError(`Could not add gallery item: ${error.message}`);
+      return;
+    }
+    const newItem: GalleryItem = {
+      id: (data as string) || `pending-${Date.now()}`,
+      room_class_id: galleryRoomClassId || null,
+      title: newGalleryTitle.trim(),
+      url: newGalleryUrl.trim(),
+      category: newGalleryCategory.trim() || 'general'
+    };
+    setGalleryItems(prev => [newItem, ...prev]);
+    setNewGalleryTitle('');
+    setNewGalleryUrl('');
+    setNewGalleryCategory('');
+    const newLog: AuditLog = {
+      id: `LOG-${Math.floor(Math.random() * 1000) + 100}`,
+      actor: `${activeRole.toUpperCase()} Session`,
+      role: activeRole,
+      action: 'ADD_GALLERY_ITEM',
+      table_name: 'horizon_gallery',
+      record_id: newItem.id,
+      changes: `Added gallery item "${newItem.title}"`,
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19)
+    };
+    setAuditLogs(prev => [newLog, ...prev]);
+  };
+
+  // Handler: remove a general gallery item -- writes through horizon_admin_remove_gallery_item (soft delete).
+  const handleRemoveGalleryItem = async (itemId: string) => {
+    setGalleryError('');
+    const targetItem = galleryItems.find(g => g.id === itemId);
+    if (!adminSupabase || !targetItem) return;
+    const { error } = await adminSupabase.rpc('horizon_admin_remove_gallery_item', {
+      p_session_token: sessionToken, p_gallery_id: itemId
+    });
+    if (error) {
+      setGalleryError(`Could not remove "${targetItem.title}": ${error.message}`);
+      return;
+    }
+    setGalleryItems(prev => prev.filter(g => g.id !== itemId));
+    const newLog: AuditLog = {
+      id: `LOG-${Math.floor(Math.random() * 1000) + 100}`,
+      actor: `${activeRole.toUpperCase()} Session`,
+      role: activeRole,
+      action: 'REMOVE_GALLERY_ITEM',
+      table_name: 'horizon_gallery',
+      record_id: itemId,
+      changes: `Removed gallery item "${targetItem.title}"`,
       timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19)
     };
     setAuditLogs(prev => [newLog, ...prev]);
@@ -346,6 +505,18 @@ export default function AdminDashboard({ sessionToken }: { sessionToken: string 
             >
               <TrendingUp className="w-4.5 h-4.5" />
               {!isSidebarCollapsed && <span>Recharts Analytics</span>}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('gallery')}
+              className={`w-full flex items-center space-x-4 px-3.5 py-3 rounded text-sm transition-all ${
+                activeTab === 'gallery'
+                  ? 'bg-gold-400 text-obsidian font-semibold shadow-[0_0_15px_rgba(212,175,55,0.2)]'
+                  : 'text-cream/70 hover:text-gold-400 hover:bg-white/5'
+              }`}
+            >
+              <Image className="w-4.5 h-4.5" />
+              {!isSidebarCollapsed && <span>Gallery & Suite Photos</span>}
             </button>
 
             <button
@@ -882,7 +1053,172 @@ export default function AdminDashboard({ sessionToken }: { sessionToken: string 
             </motion.div>
           )}
 
-          {/* TAB 4: SYSTEM SETTINGS & AUDIT COMPLIANCE */}
+          {/* TAB 4: GALLERY & SUITE PHOTO MANAGEMENT */}
+          {activeTab === 'gallery' && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="space-y-8"
+            >
+              <div className="text-left">
+                <h2 className="font-serif text-2xl text-cream tracking-wide">Gallery & Suite Photo Management</h2>
+                <p className="text-xs text-cream/50 mt-1">
+                  Curate the photo sets shown for each room class, and manage the general property gallery.
+                </p>
+              </div>
+
+              {galleryError && (
+                <motion.div
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-xs text-red-400 font-mono bg-red-400/10 border border-red-400/20 p-3 rounded"
+                >
+                  {galleryError}
+                </motion.div>
+              )}
+
+              {/* Room class photo sets */}
+              <div className="bg-[#0F1115] border border-gold-400/10 p-6 rounded-lg text-left">
+                <div className="flex items-center space-x-3 mb-6">
+                  <Image className="w-5 h-5 text-gold-400" />
+                  <h3 className="font-serif text-base text-gold-400 tracking-wide uppercase">
+                    Room Class Photo Sets
+                  </h3>
+                </div>
+
+                <div className="space-y-6">
+                  {roomClasses.length === 0 ? (
+                    <p className="text-xs text-cream/50">No room classes loaded.</p>
+                  ) : (
+                    roomClasses.map((rc) => (
+                      <div key={rc.id} className="border-b border-white/5 pb-6 last:border-0 last:pb-0">
+                        <p className="text-sm font-semibold text-cream mb-3">{rc.name}</p>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
+                          {rc.images.length === 0 && (
+                            <span className="text-[11px] text-cream/40 italic">No photos yet.</span>
+                          )}
+                          {rc.images.map((img) => (
+                            <div key={img} className="relative group border border-white/10 rounded overflow-hidden">
+                              <img src={img} alt={rc.name} className="w-full h-20 object-cover" />
+                              <button
+                                onClick={() => handleRemoveRoomClassImage(rc.id, img)}
+                                className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                                title="Remove photo"
+                              >
+                                <Trash2 className="w-4 h-4 text-red-400" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="Image URL"
+                            value={galleryRoomClassId === rc.id ? galleryNewImageUrl : ''}
+                            onFocus={() => setGalleryRoomClassId(rc.id)}
+                            onChange={(e) => {
+                              setGalleryRoomClassId(rc.id);
+                              setGalleryNewImageUrl(e.target.value);
+                            }}
+                            className="flex-1 bg-[#14171D] border border-white/10 p-2.5 rounded text-xs focus:outline-none focus:border-gold-400/50"
+                          />
+                          <button
+                            onClick={() => handleAddRoomClassImage(rc.id, galleryRoomClassId === rc.id ? galleryNewImageUrl : '')}
+                            className="px-4 py-2 bg-gold-400 text-obsidian text-xs font-bold uppercase tracking-wider hover:bg-gold-300 transition-colors flex items-center gap-1.5 shrink-0"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            Add
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* General property gallery */}
+              <div className="bg-[#0F1115] border border-gold-400/10 p-6 rounded-lg text-left">
+                <div className="flex items-center space-x-3 mb-6">
+                  <Sparkles className="w-5 h-5 text-gold-400" />
+                  <h3 className="font-serif text-base text-gold-400 tracking-wide uppercase">
+                    General Property Gallery
+                  </h3>
+                </div>
+
+                <form onSubmit={handleAddGalleryItem} className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
+                  <input
+                    type="text"
+                    placeholder="Title"
+                    value={newGalleryTitle}
+                    onChange={(e) => setNewGalleryTitle(e.target.value)}
+                    className="bg-[#14171D] border border-white/10 p-2.5 rounded text-xs focus:outline-none focus:border-gold-400/50"
+                    required
+                  />
+                  <input
+                    type="text"
+                    placeholder="Image URL"
+                    value={newGalleryUrl}
+                    onChange={(e) => setNewGalleryUrl(e.target.value)}
+                    className="bg-[#14171D] border border-white/10 p-2.5 rounded text-xs focus:outline-none focus:border-gold-400/50"
+                    required
+                  />
+                  <select
+                    value={galleryRoomClassId}
+                    onChange={(e) => setGalleryRoomClassId(e.target.value)}
+                    className="bg-[#14171D] border border-white/10 p-2.5 rounded text-xs focus:outline-none focus:border-gold-400/50"
+                  >
+                    <option value="">No room class (general)</option>
+                    {roomClasses.map(rc => (
+                      <option key={rc.id} value={rc.id}>{rc.name}</option>
+                    ))}
+                  </select>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Category"
+                      value={newGalleryCategory}
+                      onChange={(e) => setNewGalleryCategory(e.target.value)}
+                      className="flex-1 bg-[#14171D] border border-white/10 p-2.5 rounded text-xs focus:outline-none focus:border-gold-400/50"
+                    />
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-gold-400 text-obsidian text-xs font-bold uppercase tracking-wider hover:bg-gold-300 transition-colors flex items-center gap-1.5 shrink-0"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add
+                    </button>
+                  </div>
+                </form>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {galleryItems.length === 0 ? (
+                    <p className="text-xs text-cream/50 col-span-full">No gallery items yet.</p>
+                  ) : (
+                    galleryItems.map((item) => (
+                      <div key={item.id} className="relative group border border-white/10 rounded-lg overflow-hidden">
+                        <img src={item.url} alt={item.title} className="w-full h-28 object-cover" />
+                        <div className="p-2">
+                          <p className="text-[11px] font-semibold text-cream truncate">{item.title}</p>
+                          <p className="text-[9px] text-cream/40 uppercase tracking-wider">{item.category}</p>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveGalleryItem(item.id)}
+                          className="absolute top-2 right-2 p-1.5 bg-black/60 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Remove"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* TAB 5: SYSTEM SETTINGS & AUDIT COMPLIANCE */}
           {activeTab === 'settings' && (
             <motion.div 
               initial={{ opacity: 0 }} 
