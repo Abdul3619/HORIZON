@@ -26,15 +26,18 @@ import {
   Database
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
+import { adminSupabase } from '../lib/adminClient';
 
 // Define typed items matching the database migrations structure
 interface Room {
   id: string;
   room_number: string;
   room_class: string;
+  room_class_id?: string;
   floor: number;
   status: 'available' | 'occupied' | 'cleaning' | 'maintenance';
   price: number;
+  images?: string[];
 }
 
 interface Booking {
@@ -59,33 +62,11 @@ interface AuditLog {
   timestamp: string;
 }
 
-// Initial Simulated/Real-Time Data matching public database structures
-const INITIAL_ROOMS: Room[] = [
-  { id: '1', room_number: '101', room_class: 'Azure Executive Suite', floor: 1, status: 'available', price: 750 },
-  { id: '2', room_number: '102', room_class: 'Azure Executive Suite', floor: 1, status: 'cleaning', price: 750 },
-  { id: '3', room_number: '201', room_class: 'Amber Sun Suite', floor: 2, status: 'occupied', price: 950 },
-  { id: '4', room_number: '202', room_class: 'Zen Oasis Suite', floor: 2, status: 'available', price: 1100 },
-  { id: '5', room_number: '301', room_class: "L'Horizon Ocean Suite", floor: 3, status: 'occupied', price: 1650 },
-  { id: '6', room_number: '302', room_class: "L'Horizon Ocean Suite", floor: 3, status: 'maintenance', price: 1650 },
-  { id: '7', room_number: '401', room_class: 'Royal Horizon Penthouse', floor: 4, status: 'available', price: 2400 },
-  { id: '8', room_number: '402', room_class: 'Riviera Presidential Suite', floor: 4, status: 'occupied', price: 3200 }
-];
-
-const INITIAL_BOOKINGS: Booking[] = [
-  { id: 'LR-2026-001', guest_name: 'Lord Alistair Sterling', email: 'alistair@sterling.co.uk', room_class: 'Royal Horizon Penthouse', check_in: '2026-06-29', check_out: '2026-07-04', status: 'confirmed', total_amount: 12000 },
-  { id: 'LR-2026-002', guest_name: 'Viscountess Helene de Valois', email: 'helene@valois.fr', room_class: "L'Horizon Ocean Suite", check_in: '2026-06-28', check_out: '2026-07-01', status: 'checked_in', total_amount: 4950 },
-  { id: 'LR-2026-003', guest_name: 'Dr. Kenji Sato', email: 'kenji.sato@kyoto-u.ac.jp', room_class: 'Zen Oasis Suite', check_in: '2026-07-05', check_out: '2026-07-12', status: 'pending', total_amount: 7700 },
-  { id: 'LR-2026-004', guest_name: 'Elena Rostova', email: 'elena@rostov-holdings.ch', room_class: 'Riviera Presidential Suite', check_in: '2026-06-25', check_out: '2026-06-30', status: 'checked_in', total_amount: 16000 },
-  { id: 'LR-2026-005', guest_name: 'Marcus Vance', email: 'marcus@vancecapital.com', room_class: 'Azure Executive Suite', check_in: '2026-06-20', check_out: '2026-06-24', status: 'checked_out', total_amount: 3000 },
-  { id: 'LR-2026-006', guest_name: 'Charlotte Dubois', email: 'charlotte@dubois-art.fr', room_class: 'Amber Sun Suite', check_in: '2026-07-01', check_out: '2026-07-03', status: 'cancelled', total_amount: 1900 }
-];
-
-const INITIAL_AUDIT_LOGS: AuditLog[] = [
-  { id: 'LOG-902', actor: 'Madame Beatrice (Admin)', role: 'admin', action: 'CREATE_PROMO', table_name: 'promo_codes', record_id: '8a2f-11ed', changes: 'Created ROYAL15 with 15% discount limit 500 usages', timestamp: '2026-06-28 21:10:00' },
-  { id: 'LOG-903', actor: 'Jean-Pierre (Manager)', role: 'manager', action: 'UPDATE_BASE_PRICE', table_name: 'room_classes', record_id: '3f2b-22df', changes: 'Increased base price of Royal Horizon Penthouse from $2200 to $2400', timestamp: '2026-06-28 22:15:30' },
-  { id: 'LOG-904', actor: 'Luc (Receptionist)', role: 'receptionist', action: 'CHECK_IN_GUEST', table_name: 'bookings', record_id: 'LR-2026-002', changes: 'Checked in Viscountess Helene de Valois, assigned Room 301', timestamp: '2026-06-28 14:05:22' },
-  { id: 'LOG-905', actor: 'Madame Beatrice (Admin)', role: 'admin', action: 'UPDATE_ROOM_STATUS', table_name: 'rooms', record_id: 'room-102', changes: 'Changed Room 102 status from Occupied to Cleaning', timestamp: '2026-06-28 11:30:10' }
-];
+// Real data now loads from Supabase (horizon_admin_list_dashboard) once the session token is known -- see
+// the data-loading effect below. These stay as the pre-load/empty state.
+const INITIAL_ROOMS: Room[] = [];
+const INITIAL_BOOKINGS: Booking[] = [];
+const INITIAL_AUDIT_LOGS: AuditLog[] = [];
 
 // Recharts simulated financial performance data
 const REVENUE_DATA = [
@@ -107,8 +88,10 @@ const OCCUPANCY_DATA = [
   { name: 'Riviera Pres', capacity: 2, occupied: 2 }
 ];
 
-export default function AdminDashboard() {
+export default function AdminDashboard({ sessionToken }: { sessionToken: string }) {
   const { setView } = useHotel();
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState<'rooms' | 'bookings' | 'analytics' | 'settings'>('rooms');
   
@@ -120,12 +103,9 @@ export default function AdminDashboard() {
   const [bookings, setBookings] = useState<Booking[]>(INITIAL_BOOKINGS);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
   
-  // Real-Time Simulated Alerts Queue
-  const [alerts, setAlerts] = useState<string[]>([
-    "Lord Sterling has completed a gourmet custom dining order via in-suite tablet.",
-    "Housekeeping marked Suite 202 as fully pristine.",
-    "New reservation [LR-2026-007] submitted for Riviera Presidential Suite."
-  ]);
+  // Admin action alerts (errors, confirmations) -- starts empty now that the dashboard runs on real data
+  // instead of the scripted demo notifications it used to seed itself with.
+  const [alerts, setAlerts] = useState<string[]>([]);
   const [showAlertMenu, setShowAlertMenu] = useState(false);
 
   // Search & Filtering State
@@ -146,85 +126,96 @@ export default function AdminDashboard() {
   const [ledgerPage, setLedgerPage] = useState(0);
   const ledgerRowsPerPage = 5;
 
-  // Real-Time Sync Simulator: Simulates external bookings or room status updates from other devices every 20 seconds
+  // Load real data from Supabase once, using the session token this gate redeemed from the magic link.
   useEffect(() => {
-    const interval = setInterval(() => {
-      // Choose a random room and change its status
-      setRooms(prev => {
-        const randomIndex = Math.floor(Math.random() * prev.length);
-        const nextRooms = [...prev];
-        const statusCycle: ('available' | 'occupied' | 'cleaning' | 'maintenance')[] = ['available', 'occupied', 'cleaning', 'maintenance'];
-        const currentStatus = nextRooms[randomIndex].status;
-        const remainingStatuses = statusCycle.filter(s => s !== currentStatus);
-        const nextStatus = remainingStatuses[Math.floor(Math.random() * remainingStatuses.length)];
-        
-        nextRooms[randomIndex] = {
-          ...nextRooms[randomIndex],
-          status: nextStatus
-        };
-
-        // Inject dynamic notification
-        const roomNum = nextRooms[randomIndex].room_number;
-        setAlerts(old => [
-          `[Real-Time Link] Room ${roomNum} state transitioned to '${nextStatus}' globally.`,
-          ...old.slice(0, 4)
-        ]);
-
-        return nextRooms;
-      });
-    }, 22000);
-
-    return () => clearInterval(interval);
-  }, []);
+    if (!adminSupabase) {
+      setLoadError('Supabase client is not configured (missing VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY).');
+      setIsLoadingData(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await adminSupabase.rpc('horizon_admin_list_dashboard', { p_session_token: sessionToken });
+      if (cancelled) return;
+      if (error) {
+        setLoadError(error.message);
+        setIsLoadingData(false);
+        return;
+      }
+      const payload = data as {
+        rooms: Array<{ id: string; room_number: string; floor: number; status: string; room_class_id: string; room_class: string; price: number; images: string[] }>;
+        bookings: Array<{ id: string; guest_name: string; email: string; room_class: string; check_in: string; check_out: string; status: Booking['status']; total_amount: number }>;
+        audit_logs: Array<{ id: string; action: string; table_name: string; created_at: string }>;
+      };
+      setRooms(payload.rooms.map(r => ({
+        id: r.id, room_number: r.room_number, floor: r.floor,
+        status: r.status as Room['status'], room_class: r.room_class, room_class_id: r.room_class_id,
+        price: r.price, images: r.images || []
+      })));
+      setBookings(payload.bookings);
+      setAuditLogs(payload.audit_logs.map(a => ({
+        id: a.id, actor: 'System', role: 'admin', action: a.action, table_name: a.table_name,
+        record_id: '', changes: `${a.action} on ${a.table_name}`,
+        timestamp: a.created_at.replace('T', ' ').substring(0, 19)
+      })));
+      setIsLoadingData(false);
+    })();
+    return () => { cancelled = true; };
+  }, [sessionToken]);
 
   // Check RBAC Route Limits
   const hasAccessToAnalytics = activeRole === 'admin' || activeRole === 'manager';
   const hasAccessToSettings = activeRole === 'admin';
 
-  // Handler: Modify Room Status
-  const handleUpdateRoomStatus = (roomId: string, newStatus: 'available' | 'occupied' | 'cleaning' | 'maintenance') => {
-    const updated = rooms.map(r => r.id === roomId ? { ...r, status: newStatus } : r);
-    setRooms(updated);
-    
+  // Handler: Modify Room Status -- writes through horizon_admin_update_room, then reflects it locally on success.
+  const handleUpdateRoomStatus = async (roomId: string, newStatus: 'available' | 'occupied' | 'cleaning' | 'maintenance') => {
     const targetRoom = rooms.find(r => r.id === roomId);
-    if (targetRoom) {
-      // Append Audit Log
-      const changeText = `Updated status of Room ${targetRoom.room_number} to ${newStatus}`;
-      const newLog: AuditLog = {
-        id: `LOG-${Math.floor(Math.random() * 1000) + 100}`,
-        actor: `${activeRole.toUpperCase()} Session`,
-        role: activeRole,
-        action: 'UPDATE_ROOM_STATUS',
-        table_name: 'rooms',
-        record_id: roomId,
-        changes: changeText,
-        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19)
-      };
-      setAuditLogs(prev => [newLog, ...prev]);
-    }
-    
     setSelectedRoomForEdit(null);
+    if (!adminSupabase || !targetRoom) return;
+    const { error } = await adminSupabase.rpc('horizon_admin_update_room', {
+      p_session_token: sessionToken, p_room_id: roomId, p_status: newStatus
+    });
+    if (error) {
+      setAlerts(old => [`Could not update Room ${targetRoom.room_number}: ${error.message}`, ...old.slice(0, 4)]);
+      return;
+    }
+    setRooms(prev => prev.map(r => r.id === roomId ? { ...r, status: newStatus } : r));
+    const newLog: AuditLog = {
+      id: `LOG-${Math.floor(Math.random() * 1000) + 100}`,
+      actor: `${activeRole.toUpperCase()} Session`,
+      role: activeRole,
+      action: 'UPDATE_ROOM_STATUS',
+      table_name: 'rooms',
+      record_id: roomId,
+      changes: `Updated status of Room ${targetRoom.room_number} to ${newStatus}`,
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19)
+    };
+    setAuditLogs(prev => [newLog, ...prev]);
   };
 
-  // Handler: Booking actions (Check In / Check Out / Cancel)
-  const handleUpdateBookingStatus = (bookingId: string, nextStatus: 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled') => {
-    setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: nextStatus } : b));
-    
-    // Log Audit change
+  // Handler: Booking actions (Check In / Check Out / Cancel) -- writes through horizon_admin_update_booking_status.
+  const handleUpdateBookingStatus = async (bookingId: string, nextStatus: 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled') => {
     const targetB = bookings.find(b => b.id === bookingId);
-    if (targetB) {
-      const newLog: AuditLog = {
-        id: `LOG-${Math.floor(Math.random() * 1000) + 100}`,
-        actor: `${activeRole.toUpperCase()} Session`,
-        role: activeRole,
-        action: 'UPDATE_BOOKING_STATUS',
-        table_name: 'bookings',
-        record_id: bookingId,
-        changes: `Changed booking status for ${targetB.guest_name} to ${nextStatus}`,
-        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19)
-      };
-      setAuditLogs(prev => [newLog, ...prev]);
+    if (!adminSupabase || !targetB) return;
+    const { error } = await adminSupabase.rpc('horizon_admin_update_booking_status', {
+      p_session_token: sessionToken, p_booking_id: bookingId, p_status: nextStatus
+    });
+    if (error) {
+      setAlerts(old => [`Could not update booking for ${targetB.guest_name}: ${error.message}`, ...old.slice(0, 4)]);
+      return;
     }
+    setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: nextStatus } : b));
+    const newLog: AuditLog = {
+      id: `LOG-${Math.floor(Math.random() * 1000) + 100}`,
+      actor: `${activeRole.toUpperCase()} Session`,
+      role: activeRole,
+      action: 'UPDATE_BOOKING_STATUS',
+      table_name: 'bookings',
+      record_id: bookingId,
+      changes: `Changed booking status for ${targetB.guest_name} to ${nextStatus}`,
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19)
+    };
+    setAuditLogs(prev => [newLog, ...prev]);
   };
 
   // Handler: Save CMS Changes
@@ -268,6 +259,21 @@ export default function AdminDashboard() {
     ? Math.round(activeBookings.reduce((sum, b) => sum + (b.total_amount / 4), 0) / activeBookings.length)
     : 1250;
   const revPar = Math.round(averageDailyRate * (occupancyPercentage / 100));
+
+  if (isLoadingData) {
+    return (
+      <div className="min-h-screen bg-[#0A0B0D] flex items-center justify-center text-stone-300">
+        Loading dashboard data…
+      </div>
+    );
+  }
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-[#0A0B0D] flex items-center justify-center text-amber-400 px-6 text-center">
+        Could not load dashboard data: {loadError}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0A0B0D] text-cream flex overflow-hidden font-sans" id="admin-workspace">

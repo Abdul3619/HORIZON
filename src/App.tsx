@@ -11,7 +11,7 @@ import LuxuryFooter from './components/LuxuryFooter';
 import HomeView from './components/HomeView';
 import RoomsView from './components/RoomsView';
 import BookingView from './components/BookingView';
-import AdminDashboard from './components/AdminDashboard';
+import AdminGate from './components/AdminGate';
 import LegalView from './components/LegalView';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -19,7 +19,7 @@ function AppContent() {
   const { currentView } = useHotel();
 
   if (currentView === 'admin') {
-    return <AdminDashboard />;
+    return <AdminGate />;
   }
 
   return (
